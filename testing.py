@@ -7,21 +7,7 @@ import cv2
 import numpy as np
 import tradeauto
 
-"""
-time.sleep(10)
-tess.pytesseract.tesseract_cmd ='/usr/local/Cellar/tesseract/4.1.1/bin/tesseract'
-cap = ImageGrab.grab(bbox=(2162, 220, 2362, 314))
-cap = ImageOps.invert(cap.convert('RGB'))
 
-tesstsr = tess.image_to_string(cv2.cvtColor(np.array(cap), cv2.COLOR_BGR2BGRA), lang='eng')
-
-
-# tesstsr = tesstsr[1:]
-cap.show()
-
-
-print(tesstsr[1:])
-"""
 time.sleep(5)
 
 intitial_bal = tradeauto.check_balance()
