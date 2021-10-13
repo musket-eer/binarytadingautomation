@@ -1,3 +1,4 @@
+from re import S
 from numpy.lib.function_base import digitize
 import pyautogui as auto
 import time
@@ -8,64 +9,18 @@ import numpy as np
 import tradeauto
 
 
-time.sleep(5)
+init_bal = 200
+bal = 900
+bal2 = 200
+exit_trade = not (tradeauto.stop_loss(init_bal, bal2) or tradeauto.take_profit(init_bal, bal2))
+count = 0
 
-intitial_bal = tradeauto.check_balance()
+while count <= 8 and exit_trade:
+    bal2 -= 10
+    print(bal2, count)
+    count += 1
 
-bal1 = intitial_bal
-bal2 = 0
-trades = 0
-compensator = 0
-while trades <= 80:
-    if tradeauto.on_profit(bal1, bal2):
-        compensator = 0
-
-    tradeauto.stake_amount(0.01 * bal1 * 2 ** compensator)
-    tradeauto.execute_trade_up()
-    trades += 1
-    time.sleep(62)
-    bal2 = tradeauto.check_balance()
-    print(trades, bal1, bal2, tradeauto.on_profit(bal1, bal2))
-
-    while tradeauto.on_profit(bal1, bal2):
-        compensator = 0
-        tradeauto.stake_amount(0.01 * bal2)
-        tradeauto.execute_trade_up()
-        trades += 1
-        time.sleep(62)
-        bal1 = bal2
-        bal2 = tradeauto.check_balance()
-        print(trades, bal1, bal2, tradeauto.on_profit(bal1, bal2))
-
-
-    compensator += 1
-
-    tradeauto.stake_amount(0.01 * bal1 * 2 ** compensator)
-    tradeauto.execute_trade_down()
-    trades += 1
-    time.sleep(62)
-    bal1 = bal2
-    bal2 = tradeauto.check_balance()
-    print(trades, bal1, bal2, tradeauto.on_profit(bal1, bal2))
-
-    while tradeauto.on_profit(bal1, bal2):
-        compensator = 0
-        tradeauto.stake_amount(0.01 * bal2)
-        tradeauto.execute_trade_down()
-        trades += 1
-        time.sleep(62)
-        bal1 = bal2
-        bal2 = tradeauto.check_balance()
-        print(trades, bal1, bal2, tradeauto.on_profit(bal1, bal2))
-        
-        
-    compensator += 1
-    trades  += 1
-
-
-print(trades)
-print(tradeauto.check_balance() - intitial_bal)
-
+    
 
     
         

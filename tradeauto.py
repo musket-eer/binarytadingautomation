@@ -1,3 +1,4 @@
+from sys import _current_frames
 import pyautogui as auto
 from PIL import ImageGrab,ImageOps
 import pytesseract as tess
@@ -18,26 +19,28 @@ def check_balance():
     cap = ImageOps.invert(cap.convert('RGB'))
 
     tesstsr = tess.image_to_string(cv2.cvtColor(np.array(cap), cv2.COLOR_BGR2BGRA), lang='eng')
+
+    # extracts, from the image, only characters of numerical significance(ignoring currency symbols etc)
     tesstsr = [x for x in tesstsr if x.isdigit() or x == "."]
     tesstsr = "".join(tesstsr)
     
     return float(tesstsr)
 
-def stop_loss(initial_balance):
+def stop_loss(initial_balance, current_balance):
     """
     sets the amount below which the trading should stop
     :param initial_balance(int): the starting account balance
-    :return (int): returns 0.7 * the amount
+    :return (int): returns 0.85 * the amount
     """
-    return float(0.7 * initial_balance)
+    return (float(0.7 * initial_balance)) >= float(current_balance)
 
-def take_profit(initial_balance):
+def take_profit(initial_balance, current_balance):
     """
     sets the amount above which the trading should stop
     :param initial_balance(int): the starting account balance
-    :return (int): returns 1.2 * the amount
+    :return (int): returns 1.4 * the amount
     """
-    return float(1.2 * initial_balance)
+    return (float(1.4 * initial_balance)) <= float(current_balance)
 
 
 def stake_amount(amount):
@@ -48,7 +51,7 @@ def stake_amount(amount):
 
     auto.click(1348, 264) # text area for entering stake
 
-    # delete characters 5 times to ensure that no char is in the stake area before typing anything
+    # delete characters 5 times to ensure that no character is in the stake area before typing anything
     for i in range(10):
         auto.press('backspace') 
     
@@ -68,21 +71,6 @@ def execute_trade_down():
     auto.click(1339, 545)
     print(datetime.datetime.now()) # prints the time for the trade
 
-def reset_stake():
-    """
-    sets the stake in the trading platform
-    :param amount (int): the amount to be staked
-    """
-
-    auto.click(1348, 264) # text area for entering stake
-
-    # delete characters 5 times to ensure that no char is in the stake area before typing anything
-    for i in range(5):
-        auto.press('backspace') 
-    
-    auto.typewrite(str(0.01 * check_balance())) # enters the stake in the stake area
-
-
  
 def on_profit(former_balance, current_balance):
     """
@@ -95,55 +83,132 @@ def on_profit(former_balance, current_balance):
 
 
 def main():
-    # to give time to switch to olymp trade
-    time.sleep(7)
+    # time allowance for switching to online trading platform 
+    time.sleep(5)
 
-    # sets the initial balance
-    initial_balance = check_balance()
+    # checks the initial balance
+    intitial_bal = check_balance()
+    stake_dec = 0.00335
+    timeout = 62
 
-    # sets the stop loss
-    loss_stop_reached = stop_loss(initial_balance) < 0.7 * initial_balance
+    # sets both bal1 and bal2 to the initial balance
+    bal1 = intitial_bal
+    bal2 = intitial_bal
 
+    # set a balance below which trading stops
+    
 
-    profit_take_reached = take_profit(initial_balance) > 1.2 * initial_balance
-    stop_trade = loss_stop_reached or profit_take_reached
-    stake = stake_amount(str(0.01 * initial_balance))
+    # sets a bool for exiting trade
+    
+    # counter to keep track of the number of trades
     trades = 0
-    double_stake = 1
 
-    while trades <= 80 or stop_trade:
-        stake = stake_amount(str(0.01 * initial_balance * double_stake))
+    # variable for loss recovery
+    compensator = 0
+    trade_exit =  stop_loss(intitial_bal, bal2) or take_profit(intitial_bal, bal2)
+
+    # daily target for the number of trades to be executed
+    target = 40
+    comp = 2.25
+    log_file = open("demo_logs.txt", "a")
+
+    log_file.write(f'\n\n')
+    log_file.write(f'{datetime.datetime.now()}\n\n')
+
+    # loop for continuously executing trades until conditions for exit are met
+    while trades <= target and not trade_exit:
+       
+        # sets the compensator to zero in case of a successful trade
+        if on_profit(bal1, bal2):
+            compensator = 0
+
+        # sets the stake for the first trade
+        stake_amount(stake_dec * intitial_bal * comp ** compensator)
+
+        # picks an up trade
         execute_trade_up()
         trades += 1
-        time.sleep(62)
-        
-        new_balance =  check_balance()
-        if on_profit(initial_balance, new_balance):
-            while on_profit(initial_balance, new_balance):
-                stake = reset_stake()
-                execute_trade_up()
-                trades += 1
-                time.sleep(62)
-                initial_balance = new_balance
+        time.sleep(timeout)
 
-        else:
-            double_stake *= 2
-            stake = stake_amount(str(0.01 * initial_balance * double_stake))
+        bal2 = check_balance()
+        trade_exit = stop_loss(intitial_bal, bal2) or take_profit(intitial_bal, bal2)
+        if bal2 > stop_loss(intitial_bal, bal2):
+                trade_exit = False
+        print(trade_exit)
+        
+        
+        
+
+
+        log_file.write(f'{trades}; {bal1}, {bal2}, {on_profit(bal1, bal2)}\n')
+       
+
+
+
+        # keeps on executing the same trade until one trade results in a loss
+        while on_profit(bal1, bal2):
+            compensator = 0
+            stake_amount(stake_dec * bal2)
+            execute_trade_up()
+            trades += 1
+            time.sleep(timeout)
+            bal1 = bal2
+            bal2 = check_balance()
+            trade_exit = stop_loss(intitial_bal, bal2) or take_profit(intitial_bal, bal2)
+            if bal2 > stop_loss(intitial_bal, bal2):
+                trade_exit = False
+            print(trade_exit)
+            
+
+            log_file.write(f'{trades}; {bal1}, {bal2}, {on_profit(bal1, bal2)}\n')
+            
+
+
+        compensator += 1
+
+        # executes a down trade if any up trade results in a loss
+        stake_amount(stake_dec * intitial_bal * comp ** compensator)
+        execute_trade_down()
+        trades += 1
+        time.sleep(timeout)
+        bal1 = bal2
+        bal2 = check_balance()
+        trade_exit = stop_loss(intitial_bal, bal2) or take_profit(intitial_bal, bal2)
+        if bal2 > stop_loss(intitial_bal, bal2):
+                trade_exit = False
+        print(trade_exit)
+        
+        
+
+        log_file.write(f'{trades}; {bal1}, {bal2}, {on_profit(bal1, bal2)}\n')
+
+        # keeps on executing down trades after every profitable down trade
+        while on_profit(bal1, bal2):
+            compensator = 0
+            stake_amount(stake_dec * bal2)
             execute_trade_down()
             trades += 1
-            time.sleep(62)
-            new_balance = check_balance()
-            while on_profit(initial_balance, new_balance):
-                stake = reset_stake()
-                execute_trade_down()
-                trades += 1
-                time.sleep(62)
-
-        double_stake *= 2
-
+            time.sleep(timeout)
+            bal1 = bal2
+            bal2 = check_balance()
+            trade_exit = stop_loss(intitial_bal, bal2) or take_profit(intitial_bal, bal2)
+            if bal2 > stop_loss(intitial_bal, bal2):
+                trade_exit = False
+            print(trade_exit)
+            
+            
+            log_file.write(f'{trades}; {bal1}, {bal2}, {on_profit(bal1, bal2)}\n')
+           
         
-        initial_balance = new_balance
+        
+        compensator += 1
+        trades  += 1
 
+
+    log_file.write(f'{trades}\n')
+    # prints the days profit or loss(when there is a negative value)
+    log_file.write(f'{check_balance() - intitial_bal}\n')
+    log_file.close()
 
 
 
