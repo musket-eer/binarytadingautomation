@@ -1,3 +1,5 @@
+# this file is for testing the functioning of different parts of the main file
+
 from re import S
 from numpy.lib.function_base import digitize
 import pyautogui as auto
@@ -7,6 +9,7 @@ from PIL import ImageGrab, ImageOps
 import cv2
 import numpy as np
 import tradeauto
+import datetime
 
 
 init_bal = 200
@@ -19,6 +22,7 @@ while count <= 8 and exit_trade:
     bal2 -= 10
     print(bal2, count)
     count += 1
+    print(datetime.datetime.now())
 
     
 

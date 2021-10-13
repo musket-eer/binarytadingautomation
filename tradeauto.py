@@ -89,7 +89,7 @@ def main():
 
     # checks the initial balance
     initial_bal = check_balance()
-    stake_dec = 0.0028899
+    stake_dec = 0.002399
     timeout = 62
 
     # sets both bal1 and bal2 to the initial balance
