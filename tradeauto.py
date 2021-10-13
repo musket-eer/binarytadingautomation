@@ -6,6 +6,7 @@ import cv2
 import time
 import datetime
 import numpy as np
+from math import pow
 
 # this should automate trading in olymp by manipulating gui
 def check_balance():
@@ -40,7 +41,7 @@ def take_profit(initial_balance, current_balance):
     :param initial_balance(int): the starting account balance
     :return (int): returns 1.4 * the amount
     """
-    return (float(1.4 * initial_balance)) <= float(current_balance)
+    return (float(1.2 * initial_balance)) <= float(current_balance)
 
 
 def stake_amount(amount):
@@ -87,13 +88,13 @@ def main():
     time.sleep(5)
 
     # checks the initial balance
-    intitial_bal = check_balance()
-    stake_dec = 0.00335
+    initial_bal = check_balance()
+    stake_dec = 0.0028899
     timeout = 62
 
     # sets both bal1 and bal2 to the initial balance
-    bal1 = intitial_bal
-    bal2 = intitial_bal
+    bal1 = initial_bal
+    bal2 = initial_bal
 
     # set a balance below which trading stops
     
@@ -105,10 +106,10 @@ def main():
 
     # variable for loss recovery
     compensator = 0
-    trade_exit =  stop_loss(intitial_bal, bal2) or take_profit(intitial_bal, bal2)
+    trade_exit =  stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal2)
 
     # daily target for the number of trades to be executed
-    target = 40
+    target = 1000
     comp = 2.25
     log_file = open("demo_logs.txt", "a")
 
@@ -123,7 +124,7 @@ def main():
             compensator = 0
 
         # sets the stake for the first trade
-        stake_amount(stake_dec * intitial_bal * comp ** compensator)
+        stake_amount(stake_dec * initial_bal * pow(comp, compensator)) 
 
         # picks an up trade
         execute_trade_up()
@@ -131,8 +132,8 @@ def main():
         time.sleep(timeout)
 
         bal2 = check_balance()
-        trade_exit = stop_loss(intitial_bal, bal2) or take_profit(intitial_bal, bal2)
-        if bal2 > stop_loss(intitial_bal, bal2):
+        trade_exit = stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal2)
+        if bal2 > stop_loss(initial_bal, bal2):
                 trade_exit = False
         print(trade_exit)
         
@@ -154,8 +155,8 @@ def main():
             time.sleep(timeout)
             bal1 = bal2
             bal2 = check_balance()
-            trade_exit = stop_loss(intitial_bal, bal2) or take_profit(intitial_bal, bal2)
-            if bal2 > stop_loss(intitial_bal, bal2):
+            trade_exit = stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal2)
+            if bal2 > stop_loss(initial_bal, bal2):
                 trade_exit = False
             print(trade_exit)
             
@@ -167,14 +168,14 @@ def main():
         compensator += 1
 
         # executes a down trade if any up trade results in a loss
-        stake_amount(stake_dec * intitial_bal * comp ** compensator)
+        stake_amount(stake_dec * initial_bal * pow(comp, compensator))
         execute_trade_down()
         trades += 1
         time.sleep(timeout)
         bal1 = bal2
         bal2 = check_balance()
-        trade_exit = stop_loss(intitial_bal, bal2) or take_profit(intitial_bal, bal2)
-        if bal2 > stop_loss(intitial_bal, bal2):
+        trade_exit = stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal2)
+        if bal2 > stop_loss(initial_bal, bal2):
                 trade_exit = False
         print(trade_exit)
         
@@ -191,8 +192,8 @@ def main():
             time.sleep(timeout)
             bal1 = bal2
             bal2 = check_balance()
-            trade_exit = stop_loss(intitial_bal, bal2) or take_profit(intitial_bal, bal2)
-            if bal2 > stop_loss(intitial_bal, bal2):
+            trade_exit = stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal2)
+            if bal2 > stop_loss(initial_bal, bal2):
                 trade_exit = False
             print(trade_exit)
             
@@ -207,7 +208,7 @@ def main():
 
     log_file.write(f'{trades}\n')
     # prints the days profit or loss(when there is a negative value)
-    log_file.write(f'{check_balance() - intitial_bal}\n')
+    log_file.write(f'{check_balance() - initial_bal}\n')
     log_file.close()
 
 
