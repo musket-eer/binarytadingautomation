@@ -12,6 +12,7 @@ import tradeauto
 import datetime
 
 
+
 init_bal = 200
 bal = 900
 bal2 = 200
