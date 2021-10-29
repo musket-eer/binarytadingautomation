@@ -1,4 +1,3 @@
-from sys import _current_frames
 import pyautogui as auto
 from PIL import ImageGrab,ImageOps
 import pytesseract as tess
@@ -34,7 +33,7 @@ def stop_loss(initial_balance, current_balance):
     :param initial_balance(int): the starting account balance
     :return (int): returns 0.85 * the amount
     """
-    return (float(0.75 * initial_balance)) >= float(current_balance)
+    return (float(0.8 * initial_balance)) >= float(current_balance)
 
 def take_profit(initial_balance, current_balance):
     """
@@ -42,7 +41,7 @@ def take_profit(initial_balance, current_balance):
     :param initial_balance(int): the starting account balance
     :return (int): returns 1.4 * the amount
     """
-    return (float(1.1 * initial_balance)) <= float(current_balance)
+    return (float(1.0348 * initial_balance)) <= float(current_balance)
 
 
 def stake_amount(amount):
@@ -91,8 +90,8 @@ def main():
     # checks the initial balance
     initial_bal = check_balance()
     stake_dec = 0.005
-    main_timeout= 62
-    timeout1 = 1 # for checking a bal at the middle of a trade
+    main_timeout= 302
+    timeout1 = 1.5 # for checking a bal at the middle of a trade
 
 
     # sets bal1, bal2 and bal3 to the initial balance
