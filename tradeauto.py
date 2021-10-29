@@ -16,8 +16,8 @@ def check_balance():
     :return (float): returns the outstanding account balance
     """
     tess.pytesseract.tesseract_cmd ='/usr/local/Cellar/tesseract/4.1.1/bin/tesseract'
-    cap = ImageGrab.grab(bbox=(2162, 220, 2362, 314))
-    cap = ImageOps.invert(cap.convert('RGB'))
+    cap = ImageGrab.grab(bbox=(2162, 220, 2362, 314)) # captures part of the screen on the trading platform that shows the account balance
+    cap = ImageOps.invert(cap.convert('RGB')) # converts the captured image to rgb, then inverts the colors for enhanced character distinction
 
     tesstsr = tess.image_to_string(cv2.cvtColor(np.array(cap), cv2.COLOR_BGR2BGRA), lang='eng')
 
@@ -31,7 +31,7 @@ def stop_loss(initial_balance, current_balance):
     """
     sets the amount below which the trading should stop
     :param initial_balance(int): the starting account balance
-    :return (int): returns 0.85 * the amount
+    :return (bool): returns True if the current balance is less than or equal to the set stop loss, else returns False
     """
     return (float(0.8 * initial_balance)) >= float(current_balance)
 
@@ -39,7 +39,7 @@ def take_profit(initial_balance, current_balance):
     """
     sets the amount above which the trading should stop
     :param initial_balance(int): the starting account balance
-    :return (int): returns 1.4 * the amount
+    :return (bool): returns True if the current balance is greater than or equal to the set take profit percentage, else returns False
     """
     return (float(1.0348 * initial_balance)) <= float(current_balance)
 
@@ -49,7 +49,7 @@ def stake_amount(amount):
     sets the stake in the trading platform
     :param amount (int): the amount to be staked
     """
-
+    # clicks the trading platform's set stake area
     auto.click(1348, 264) # text area for entering stake
 
     # delete characters 5 times to ensure that no character is in the stake area before typing anything
@@ -62,6 +62,7 @@ def execute_trade_up():
     """
     executes an up-trade
     """
+    # clicks the trading platform's execute trade up button
     auto.click(1336, 456)
     print(datetime.now()) # prints the time for the trade
 
@@ -69,6 +70,7 @@ def execute_trade_down():
     """
     executes a dowm-trade
     """
+    # clicks the trading platform's execute trade down button
     auto.click(1339, 545)
     print(datetime.now()) # prints the time for the trade
 
@@ -78,7 +80,7 @@ def on_profit(former_balance, current_balance):
     checks whether a profit or loss was made after a single trade
     :param former_balance (float): balance before the trade
     :param current_balance (float): balance after the trade
-    :return (bool): shows whether we are on profit (True) or not (False)
+    :return (bool): returns True if current balance is greater than or equal to former balance, else returns False
     """
     return current_balance >= former_balance
 
@@ -99,24 +101,17 @@ def main():
     bal2 = initial_bal # bal after a trade is executed but before it closes
     bal3 = initial_bal # bal at the close of a trade
 
-    # set a balance below which trading stops
-    
-
-    # sets a bool for exiting trade
-    
-    # counter to keep track of the number of trades
-
-    # variable for loss recovery
+    # a bool to keep track of whether stop loss or take profit as been attained
     trade_exit =  stop_loss(initial_bal, bal3) or take_profit(initial_bal, bal3)
 
     # daily target for the number of trades to be executed
     target = 1000
-    comp = 2.25
+    comp = 2.25 # a factor for multiplying the stake amount to recover losses
     week_day = calendar.day_name[date.today().weekday()] + ".csv"
     filename = "demo_logs" + week_day
     log_file = open(filename, "a")
-    compensator = 0
-    trades = 0
+    compensator = 0 # for powering comp after each lost trade 
+    trades = 0 # tracker for counting the number of trades opened
     
     # loop for continuously executing trades until conditions for exit are met
     while trades <= target and not trade_exit:
@@ -127,7 +122,7 @@ def main():
         # picks an up trade
         execute_trade_up()
         time.sleep(timeout1)
-        bal2 = check_balance()
+        bal2 = check_balance() # records the balance shortly after the trade has been executed. if this bal is same as one before the trade, then the network lagged
         # exiting the main loop incase of a network lag
         if bal2 == bal1:
             print("network lag")
@@ -149,6 +144,7 @@ def main():
             execute_trade_up()
             time.sleep(timeout1)
 
+            # stops executing trades if the network lag occurs within the main loop
             if bal2 == bal1:
                 compensator = -1
                 print("network lag")
@@ -194,11 +190,13 @@ def main():
             execute_trade_down()
             time.sleep(timeout1)
 
+            # stops executing trades if the network lag occurs within the main loop
             if bal2 == bal1:
                 compensator = -1
                 print("network lag")
                 time.sleep(main_timeout)
                 break
+
             trades += 1
             time.sleep(main_timeout)
             bal1 = bal3
@@ -208,7 +206,7 @@ def main():
             
             log_file.write(f'{trades},{bal1},{bal3},{bal3 - bal1}\n')
             
-        # sets the compensator to zero in case of a successful trade
+        # sets the compensator to zero in case of a successful trade. This resets the stake amount
         if on_profit(bal1, bal3):
             compensator = 0
         else:
