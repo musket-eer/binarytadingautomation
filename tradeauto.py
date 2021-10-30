@@ -92,7 +92,7 @@ def main():
     # checks the initial balance
     initial_bal = check_balance()
     stake_dec = 0.005
-    main_timeout= 302
+    main_timeout= 60
     timeout1 = 1.5 # for checking a bal at the middle of a trade
 
 
