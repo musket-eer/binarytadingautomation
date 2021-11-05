@@ -33,7 +33,7 @@ def stop_loss(initial_balance, current_balance):
     :param initial_balance(int): the starting account balance
     :return (bool): returns True if the current balance is less than or equal to the set stop loss, else returns False
     """
-    return (float(0.8 * initial_balance)) >= float(current_balance)
+    return (float(0.86 * initial_balance)) >= float(current_balance)
 
 def take_profit(initial_balance, current_balance):
     """
@@ -41,7 +41,7 @@ def take_profit(initial_balance, current_balance):
     :param initial_balance(int): the starting account balance
     :return (bool): returns True if the current balance is greater than or equal to the set take profit percentage, else returns False
     """
-    return (float(1.0348 * initial_balance)) <= float(current_balance)
+    return (float(1.025 * initial_balance)) <= float(current_balance)
 
 
 def stake_amount(amount):
@@ -68,7 +68,7 @@ def execute_trade_up():
 
 def execute_trade_down():
     """
-    executes a dowm-trade
+    executes a down-trade
     """
     # clicks the trading platform's execute trade down button
     auto.click(1339, 545)
@@ -91,9 +91,9 @@ def main():
 
     # checks the initial balance
     initial_bal = check_balance()
-    stake_dec = 0.005
-    main_timeout= 60
-    timeout1 = 1.5 # for checking a bal at the middle of a trade
+    stake_dec = 0.001
+    main_timeout= 121
+    timeout1 = 3 # for checking a bal at the middle of a trade
 
 
     # sets bal1, bal2 and bal3 to the initial balance
@@ -220,9 +220,72 @@ def main():
     log_file.close()
 
 
-if __name__ == "__main__":
-    main()
+def main2():
+    # check the balance
+    time.sleep(5)
+    initial_bal = check_balance()
+    bal1 = initial_bal
+    bal2 = initial_bal
+    bal3 = initial_bal
+   
+    stake_dec = 0.0025
+    main_timeout= 61
+    timeout1 = 1 # for checking a bal at the middle of a trade
 
+    # establish control variables, eg no of trades, trade exit, 
+
+    trade_exit =  stop_loss(initial_bal, bal3) or take_profit(initial_bal, bal3)
+
+    # daily target for the number of trades to be executed
+    target = 100
+    comp = 2.25 # a factor for multiplying the stake amount to recover losses
+    
+    
+    compensator = 0 # for powering comp after each lost trade 
+    trades = 0 # tracker for counting the number of trades opened
+    
+    while trades < target and not trade_exit:
+        if on_profit(bal1, bal3):
+            compensator = 0
+            stake_amount(stake_dec * initial_bal)
+            execute_trade_up()
+            
+        else:
+            compensator += 1
+            stake_amount(stake_dec * initial_bal * pow(comp, compensator))
+            execute_trade_up()
+            
+        time.sleep(timeout1)
+        bal2 = check_balance()
+        time.sleep(main_timeout)
+        bal1 = bal3
+        bal3 = check_balance()
+
+        if on_profit(bal1, bal3):
+            compensator = 0
+            stake_amount(stake_dec * initial_bal)
+            execute_trade_down()
+        else:
+            compensator += 1
+            stake_amount(stake_dec * initial_bal * pow(comp, compensator))
+            execute_trade_down()
+            
+        time.sleep(timeout1)
+        bal2 = check_balance()
+        time.sleep(main_timeout)
+        bal1 = bal3
+        bal3 = check_balance()
+
+        trade_exit = stop_loss(initial_bal, bal3) or take_profit(initial_bal, bal3)
+
+        trades += 1
+        prof = bal3 - initial_bal
+        perc = int(prof / initial_bal * 100)
+        print(perc)
+
+        
+if __name__ == "__main__":
+    main2()
 
 
 
