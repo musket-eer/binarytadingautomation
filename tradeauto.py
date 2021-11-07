@@ -33,7 +33,7 @@ def stop_loss(initial_balance, current_balance):
     :param initial_balance(int): the starting account balance
     :return (bool): returns True if the current balance is less than or equal to the set stop loss, else returns False
     """
-    return (float(0.86 * initial_balance)) >= float(current_balance)
+    return (int(0.86 * initial_balance)) >= int(current_balance)
 
 def take_profit(initial_balance, current_balance):
     """
@@ -41,7 +41,7 @@ def take_profit(initial_balance, current_balance):
     :param initial_balance(int): the starting account balance
     :return (bool): returns True if the current balance is greater than or equal to the set take profit percentage, else returns False
     """
-    return (float(1.025 * initial_balance)) <= float(current_balance)
+    return (int(1.025 * initial_balance)) <= int(current_balance)
 
 
 def stake_amount(amount):
@@ -228,9 +228,9 @@ def main2():
     bal2 = initial_bal
     bal3 = initial_bal
    
-    stake_dec = 0.0025
+    stake_dec = 1.2 / check_balance()
     main_timeout= 61
-    timeout1 = 1 # for checking a bal at the middle of a trade
+    timeout1 = 1.5 # for checking a bal at the middle of a trade
 
     # establish control variables, eg no of trades, trade exit, 
 
@@ -257,6 +257,10 @@ def main2():
             
         time.sleep(timeout1)
         bal2 = check_balance()
+        if bal2 == bal1:
+            print('network lag')
+            break
+
         time.sleep(main_timeout)
         bal1 = bal3
         bal3 = check_balance()
@@ -272,6 +276,10 @@ def main2():
             
         time.sleep(timeout1)
         bal2 = check_balance()
+        if bal2 == bal1:
+            print('network lag')
+            break
+
         time.sleep(main_timeout)
         bal1 = bal3
         bal3 = check_balance()
@@ -281,7 +289,7 @@ def main2():
         trades += 1
         prof = bal3 - initial_bal
         perc = int(prof / initial_bal * 100)
-        print(perc)
+        print(perc, bal3)
 
         
 if __name__ == "__main__":
