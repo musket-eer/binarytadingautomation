@@ -8,7 +8,6 @@ import calendar
 import numpy as np
 from math import pow, sqrt
 
-# this should automate trading in olymp by manipulating gui
 def check_balance():
     """
     captures the written balance on olymp trade platform and saves it as an integer
@@ -33,7 +32,7 @@ def stop_loss(initial_balance, current_balance):
     :param initial_balance(int): the starting account balance
     :return (bool): returns True if the current balance is less than or equal to the set stop loss, else returns False
     """
-    return (int(0.0 * initial_balance)) >= int(current_balance)
+    return (int(0.3 * initial_balance)) >= int(current_balance)
 
 def take_profit(initial_balance, current_balance):
     """
@@ -41,7 +40,7 @@ def take_profit(initial_balance, current_balance):
     :param initial_balance(int): the starting account balance
     :return (bool): returns True if the current balance is greater than or equal to the set take profit percentage, else returns False
     """
-    return (int(2.006 * initial_balance)) <= int(current_balance)
+    return (int(1.006 * initial_balance)) <= int(current_balance)
 
 
 def stake_amount(amount):
@@ -82,7 +81,7 @@ def on_profit(former_balance, current_balance):
     :param current_balance (float): balance after the trade
     :return (bool): returns True if current balance is greater than or equal to former balance, else returns False
     """
-    return current_balance > former_balance
+    return current_balance >= former_balance
 
 
 def main():
@@ -109,6 +108,8 @@ def main():
     comp = 1.0 # a factor for multiplying the stake amount to recover losses
     filename = "demo_logs.csv"
     log_file = open(filename, "a")
+
+    # variables for adjusting the stake amount incase of a loss
     compensator = 0 # for powering comp after each lost trade 
     trades = 0 # tracker for counting the number of trades opened
     proff = 0.8
@@ -264,7 +265,8 @@ def main2():
     target = 1000
     comp = 1.4 # a factor for multiplying the stake amount to recover losses
     
-    
+
+    # variables for adjusting the stake amount
     compensator = 0 # for powering comp after each lost trade 
     trades = 0 # tracker for counting the number of trades opened
     proff = 1
@@ -344,8 +346,10 @@ def main2():
 
 
 def main3():
-     # check the balance
+     # time laspe for switching windows
     time.sleep(5)
+
+    # check the balance
     initial_bal = check_balance()
     bal1 = initial_bal
     bal2 = initial_bal
@@ -366,12 +370,12 @@ def main3():
     filename = "demo_logs3.csv"
     log_file = open(filename, "a")
 
+    # a tuple for all the stakes
     stakes = (1.01, 1.4, 3.2, 7.20, 17.00, 40.00, 90.00, 200.00, 420.00, 860.00, 1800.00)
     stakes_counter = 0
     while trades < target:
         if stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal3):
                 break
-
 
         for i in range(3):
             stake_amount(stake)
