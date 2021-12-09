@@ -6,7 +6,7 @@ import time
 from datetime import datetime, date
 import calendar
 import numpy as np
-from math import pow
+from math import pow, sqrt
 
 # this should automate trading in olymp by manipulating gui
 def check_balance():
@@ -33,7 +33,7 @@ def stop_loss(initial_balance, current_balance):
     :param initial_balance(int): the starting account balance
     :return (bool): returns True if the current balance is less than or equal to the set stop loss, else returns False
     """
-    return (int(0.86 * initial_balance)) >= int(current_balance)
+    return (int(0.0 * initial_balance)) >= int(current_balance)
 
 def take_profit(initial_balance, current_balance):
     """
@@ -41,7 +41,7 @@ def take_profit(initial_balance, current_balance):
     :param initial_balance(int): the starting account balance
     :return (bool): returns True if the current balance is greater than or equal to the set take profit percentage, else returns False
     """
-    return (int(1.025 * initial_balance)) <= int(current_balance)
+    return (int(2.006 * initial_balance)) <= int(current_balance)
 
 
 def stake_amount(amount):
@@ -82,7 +82,7 @@ def on_profit(former_balance, current_balance):
     :param current_balance (float): balance after the trade
     :return (bool): returns True if current balance is greater than or equal to former balance, else returns False
     """
-    return current_balance >= former_balance
+    return current_balance > former_balance
 
 
 def main():
@@ -91,9 +91,9 @@ def main():
 
     # checks the initial balance
     initial_bal = check_balance()
-    stake_dec = 0.001
-    main_timeout= 121
-    timeout1 = 3 # for checking a bal at the middle of a trade
+    stake_dec = 1.01 / initial_bal
+    main_timeout= 61.5
+    timeout1 = 1.5 # for checking a bal at the middle of a trade
 
 
     # sets bal1, bal2 and bal3 to the initial balance
@@ -106,13 +106,12 @@ def main():
 
     # daily target for the number of trades to be executed
     target = 1000
-    comp = 2.25 # a factor for multiplying the stake amount to recover losses
-    week_day = calendar.day_name[date.today().weekday()] + ".csv"
-    filename = "demo_logs" + week_day
+    comp = 1.0 # a factor for multiplying the stake amount to recover losses
+    filename = "demo_logs.csv"
     log_file = open(filename, "a")
     compensator = 0 # for powering comp after each lost trade 
     trades = 0 # tracker for counting the number of trades opened
-    
+    proff = 0.8
     # loop for continuously executing trades until conditions for exit are met
     while trades <= target and not trade_exit:
 
@@ -124,6 +123,9 @@ def main():
         time.sleep(timeout1)
         bal2 = check_balance() # records the balance shortly after the trade has been executed. if this bal is same as one before the trade, then the network lagged
         # exiting the main loop incase of a network lag
+        if stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal3):
+                break
+
         if bal2 == bal1:
             print("network lag")
             break
@@ -132,19 +134,24 @@ def main():
         time.sleep(main_timeout)
 
         bal3 = check_balance()
-        trade_exit = stop_loss(initial_bal, bal3) or take_profit(initial_bal, bal3)
+        
         print(trade_exit, bal3 - bal1)
 
-        log_file.write(f'{trades}; {bal1}, {bal3}, {bal3 - bal1}\n')
+        log_file.write(f'{trades}, {bal3}\n')
        
         # keeps on executing the same trade until one trade results in a loss
         while on_profit(bal1, bal3):
             compensator = 0
-            stake_amount(stake_dec * bal3)
+            comp = 1.0
+            proff = 0.8
+            stake_amount(stake_dec * initial_bal)
             execute_trade_up()
             time.sleep(timeout1)
 
             # stops executing trades if the network lag occurs within the main loop
+            if stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal2):
+                break
+
             if bal2 == bal1:
                 compensator = -1
                 print("network lag")
@@ -158,9 +165,11 @@ def main():
             print(trade_exit, bal3 - bal1)
             
 
-            log_file.write(f'{trades},{bal1},{bal3},{bal3 - bal1}\n')
+            log_file.write(f'{trades}, {bal3}\n')
             
-        compensator += 1
+        proff *= 1.05
+        compensator += 0.5 * proff
+        comp += 0.3 * sqrt(proff)
 
         # executes a down trade if any up trade results in a loss
         stake_amount(stake_dec * initial_bal * pow(comp, compensator))
@@ -169,6 +178,9 @@ def main():
         bal2 = check_balance()
 
         # exiting the main loop incase of a network lag
+        if stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal2):
+                break
+
         if bal2 == bal1:
             print("network lag")
             time.sleep(main_timeout)
@@ -181,14 +193,19 @@ def main():
         trade_exit = stop_loss(initial_bal, bal3) or take_profit(initial_bal, bal3)
         print(trade_exit, bal3 - bal1)
         
-        log_file.write(f'{trades},{bal1},{bal3},{bal3 - bal1}\n')
+        log_file.write(f'{trades}, {bal3}\n')
 
         # keeps on executing down trades after every profitable down trade
         while on_profit(bal1, bal3):
             compensator = 0
-            stake_amount(stake_dec * bal3)
+            comp = 1.0
+            proff = 0.8
+            stake_amount(stake_dec * initial_bal)
             execute_trade_down()
             time.sleep(timeout1)
+
+            if stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal3):
+                break
 
             # stops executing trades if the network lag occurs within the main loop
             if bal2 == bal1:
@@ -201,16 +218,23 @@ def main():
             time.sleep(main_timeout)
             bal1 = bal3
             bal3 = check_balance()
-            trade_exit = stop_loss(initial_bal, bal3) or take_profit(initial_bal, bal3)
+            if stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal2):
+                break
+
             print(trade_exit, bal3 - bal1)
             
-            log_file.write(f'{trades},{bal1},{bal3},{bal3 - bal1}\n')
+            log_file.write(f'{trades}, {bal3}\n')
             
         # sets the compensator to zero in case of a successful trade. This resets the stake amount
         if on_profit(bal1, bal3):
             compensator = 0
+            comp = 1.0
+            proff = 0.8
         else:
-            compensator += 1
+            proff *= 1.05
+            compensator += 0.5 * proff
+            comp += 0.3 * sqrt(proff)
+
 
         trades  += 1
 
@@ -228,8 +252,8 @@ def main2():
     bal2 = initial_bal
     bal3 = initial_bal
    
-    stake_dec = 1.2 / check_balance()
-    main_timeout= 61
+    stake_dec = 1.01 / check_balance()
+    main_timeout= 61.5
     timeout1 = 1.5 # for checking a bal at the middle of a trade
 
     # establish control variables, eg no of trades, trade exit, 
@@ -237,26 +261,40 @@ def main2():
     trade_exit =  stop_loss(initial_bal, bal3) or take_profit(initial_bal, bal3)
 
     # daily target for the number of trades to be executed
-    target = 100
-    comp = 2.25 # a factor for multiplying the stake amount to recover losses
+    target = 1000
+    comp = 1.4 # a factor for multiplying the stake amount to recover losses
     
     
     compensator = 0 # for powering comp after each lost trade 
     trades = 0 # tracker for counting the number of trades opened
+    proff = 1
+
+    filename = "demo_logs2.csv"
+    log_file = open(filename, "a")
     
     while trades < target and not trade_exit:
         if on_profit(bal1, bal3):
+            comp = 1.4
             compensator = 0
+            proff = 0
             stake_amount(stake_dec * initial_bal)
             execute_trade_up()
             
         else:
-            compensator += 1
+            proff *= 2
+            comp += 0.2
+            compensator += 0.5 + proff
             stake_amount(stake_dec * initial_bal * pow(comp, compensator))
             execute_trade_up()
             
+        trades += 1
         time.sleep(timeout1)
         bal2 = check_balance()
+
+
+        if stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal2):
+            break
+
         if bal2 == bal1:
             print('network lag')
             break
@@ -264,18 +302,28 @@ def main2():
         time.sleep(main_timeout)
         bal1 = bal3
         bal3 = check_balance()
+
+        log_file.write(f'{trades}, {bal3}\n')
 
         if on_profit(bal1, bal3):
+            proff = 0
+            comp = 1.4
             compensator = 0
             stake_amount(stake_dec * initial_bal)
             execute_trade_down()
         else:
-            compensator += 1
+            proff *= 2
+            comp += 0.2
+            compensator += 0.5 + proff
             stake_amount(stake_dec * initial_bal * pow(comp, compensator))
             execute_trade_down()
             
         time.sleep(timeout1)
         bal2 = check_balance()
+
+        if stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal2):
+            break
+
         if bal2 == bal1:
             print('network lag')
             break
@@ -284,16 +332,132 @@ def main2():
         bal1 = bal3
         bal3 = check_balance()
 
-        trade_exit = stop_loss(initial_bal, bal3) or take_profit(initial_bal, bal3)
-
         trades += 1
+
+        log_file.write(f'{trades}, {bal3}\n')
         prof = bal3 - initial_bal
         perc = int(prof / initial_bal * 100)
         print(perc, bal3)
 
+    log_file.write(f'{trades}, {bal3}\n')
+    log_file.close()
+
+
+def main3():
+     # check the balance
+    time.sleep(5)
+    initial_bal = check_balance()
+    bal1 = initial_bal
+    bal2 = initial_bal
+    bal3 = initial_bal
+    x = 1.01
+    y = 1.1
+    z = 1.005
+    stake_dec = x / check_balance()
+    main_timeout = 62
+    timeout1 = 1.8 # for checking a bal at the middle of a trade
+
+    # daily target for the number of trades to be executed
+    target = 1000
+    comp = 1.1 # a factor for multiplying the stake amount to recover losses 
+    compensator = 0 # for powering comp after each lost trade 
+    trades = 0 # tracker for counting the number of trades opened
+    stake = stake_dec * initial_bal * pow(comp, compensator)
+    filename = "demo_logs3.csv"
+    log_file = open(filename, "a")
+
+    stakes = (1.01, 1.4, 3.2, 7.20, 17.00, 40.00, 90.00, 200.00, 420.00, 860.00, 1800.00)
+    stakes_counter = 0
+    while trades < target:
+        if stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal3):
+                break
+
+
+        for i in range(3):
+            stake_amount(stake)
+            execute_trade_up()
+            trades += 1
+            time.sleep(timeout1)
+            bal2 = check_balance()
+
+            if bal1 == bal2:
+                print("network lag")
+                break
         
+            time.sleep(main_timeout)
+            bal1 = bal3
+            bal3 =check_balance()
+
+            if on_profit(bal1, bal3):
+                stakes_counter = 0
+                y = 1
+                x = stakes[stakes_counter] * y * z
+            else:
+                stakes_counter += 1
+                y += 0.03
+                x = stakes[stakes_counter] * y * z
+            
+            stake_dec = x / initial_bal
+            stake = stake_dec * initial_bal
+
+            if stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal3):
+                break
+
+            log_file.write(f'{trades}, {bal3}, {stake}\n')
+
+        if stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal3):
+                break
+
+        if bal1 == bal2:
+            print("network lag")
+            break
+            
+        for i in range(3):
+            stake_amount(stake)
+            execute_trade_down()
+            trades += 1
+            time.sleep(timeout1)
+            bal2 = check_balance()
+
+            if bal1 == bal2:
+                print("network lag")
+                break
+
+            time.sleep(main_timeout)
+            bal1 = bal3
+            bal3 =check_balance()
+
+            if on_profit(bal1, bal3):
+                stakes_counter = 0
+                y = 1
+                x = stakes[stakes_counter] * y * z
+            else:
+                stakes_counter += 1
+                y += 0.03
+                x = stakes[stakes_counter] * y * z
+            
+            stake_dec = x / initial_bal
+            stake = stake_dec * initial_bal
+
+            if stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal3):
+                break
+
+            log_file.write(f'{trades}, {bal3}, {stake}\n')
+
+            if bal1 == bal2:
+                print("network lag")
+                break
+
+
+    profit = (bal3 - initial_bal)/initial_bal * 100
+    log_file.write(f'{trades}, {bal3}, {stake}\n')
+    log_file.write(f'{profit}\n')
+    log_file.close()
+
+
+            
 if __name__ == "__main__":
-    main2()
+    main3()
 
 
 
