@@ -40,7 +40,7 @@ def take_profit(initial_balance, current_balance):
     :param initial_balance(int): the starting account balance
     :return (bool): returns True if the current balance is greater than or equal to the set take profit percentage, else returns False
     """
-    return (int(1.006 * initial_balance)) <= int(current_balance)
+    return (int(2.006 * initial_balance)) <= int(current_balance)
 
 
 def stake_amount(amount):
@@ -82,6 +82,15 @@ def on_profit(former_balance, current_balance):
     :return (bool): returns True if current balance is greater than or equal to former balance, else returns False
     """
     return current_balance >= former_balance
+    
+def record_trade(trades, start, stop, counter):
+
+    filename = "demo_logs_final.csv"
+    log_file = open(filename, "a")
+
+    profit = (stop - start) / start * 100
+    log_file.write(f'{trades:}, ({start},{stop},({counter}, {profit}\n')
+    log_file.close()
 
 
 def main():
@@ -346,7 +355,7 @@ def main2():
 
 
 def main3():
-     # time laspe for switching windows
+     # time lapse for switching windows
     time.sleep(5)
 
     # check the balance
@@ -355,23 +364,20 @@ def main3():
     bal2 = initial_bal
     bal3 = initial_bal
     x = 1.01
-    y = 1.1
-    z = 1.005
+    y = 1
+    z = 1
     stake_dec = x / check_balance()
-    main_timeout = 62
-    timeout1 = 1.8 # for checking a bal at the middle of a trade
+    main_timeout = 63
+    timeout1 = 2 # for checking a bal at the middle of a trade
 
     # daily target for the number of trades to be executed
     target = 1000
-    comp = 1.1 # a factor for multiplying the stake amount to recover losses 
-    compensator = 0 # for powering comp after each lost trade 
     trades = 0 # tracker for counting the number of trades opened
-    stake = stake_dec * initial_bal * pow(comp, compensator)
-    filename = "demo_logs3.csv"
-    log_file = open(filename, "a")
+    stake = stake_dec * initial_bal
+
 
     # a tuple for all the stakes
-    stakes = (1.01, 1.4, 3.2, 7.20, 17.00, 40.00, 90.00, 200.00, 420.00, 860.00, 1800.00)
+    stakes = (1.01, 1.7, 3.8, 8.50, 22.00, 60.00, 140.00, 300.00, 700.00, 1460.00, 2900.00)
     stakes_counter = 0
     while trades < target:
         if stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal3):
@@ -395,19 +401,21 @@ def main3():
             if on_profit(bal1, bal3):
                 stakes_counter = 0
                 y = 1
-                x = stakes[stakes_counter] * y * z
+                z = 1
+               
             else:
                 stakes_counter += 1
                 y += 0.03
-                x = stakes[stakes_counter] * y * z
-            
+                z += 0.03
+               
+            x = stakes[stakes_counter] * y * z
             stake_dec = x / initial_bal
             stake = stake_dec * initial_bal
 
             if stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal3):
                 break
 
-            log_file.write(f'{trades}, {bal3}, {stake}\n')
+            record_trade(trades, bal1, bal3, stakes_counter + 1)
 
         if stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal3):
                 break
@@ -434,32 +442,24 @@ def main3():
             if on_profit(bal1, bal3):
                 stakes_counter = 0
                 y = 1
-                x = stakes[stakes_counter] * y * z
+                z = 1
+                
             else:
                 stakes_counter += 1
                 y += 0.03
-                x = stakes[stakes_counter] * y * z
-            
+                z += 0.03
+                
+            x = stakes[stakes_counter] * y * z
             stake_dec = x / initial_bal
             stake = stake_dec * initial_bal
 
             if stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal3):
                 break
 
-            log_file.write(f'{trades}, {bal3}, {stake}\n')
-
             if bal1 == bal2:
                 print("network lag")
                 break
-
-
-    profit = (bal3 - initial_bal)/initial_bal * 100
-    log_file.write(f'{trades}, {bal3}, {stake}\n')
-    log_file.write(f'{profit}\n')
-    log_file.close()
-
-
-            
+   
 if __name__ == "__main__":
     main3()
 
