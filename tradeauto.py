@@ -24,6 +24,7 @@ def check_balance():
     tesstsr = [x for x in tesstsr if x.isdigit() or x == "."]
     tesstsr = "".join(tesstsr)
     
+    print(float(tesstsr))
     return float(tesstsr)
 
 def stop_loss(initial_balance, current_balance):
@@ -40,7 +41,7 @@ def take_profit(initial_balance, current_balance):
     :param initial_balance(int): the starting account balance
     :return (bool): returns True if the current balance is greater than or equal to the set take profit percentage, else returns False
     """
-    return (int(2.006 * initial_balance)) <= int(current_balance)
+    return (int(1.006 * initial_balance)) <= int(current_balance)
 
 
 def stake_amount(amount):
@@ -70,7 +71,7 @@ def execute_trade_down():
     executes a down-trade
     """
     # clicks the trading platform's execute trade down button
-    auto.click(1339, 545)
+    auto.click(1319, 535)
     print(datetime.now()) # prints the time for the trade
 
  
@@ -367,14 +368,13 @@ def main3():
     y = 1
     z = 1
     stake_dec = x / check_balance()
-    main_timeout = 63
-    timeout1 = 2 # for checking a bal at the middle of a trade
+    main_timeout = 60
+    timeout1 = 3 # for checking a bal at the middle of a trade
 
     # daily target for the number of trades to be executed
     target = 1000
     trades = 0 # tracker for counting the number of trades opened
     stake = stake_dec * initial_bal
-
 
     # a tuple for all the stakes
     stakes = (1.01, 1.7, 3.8, 8.50, 22.00, 60.00, 140.00, 300.00, 700.00, 1460.00, 2900.00)
@@ -455,10 +455,14 @@ def main3():
 
             if stop_loss(initial_bal, bal2) or take_profit(initial_bal, bal3):
                 break
+            
+            record_trade(trades, bal1, bal3, stakes_counter + 1)
 
             if bal1 == bal2:
                 print("network lag")
                 break
+
+            
    
 if __name__ == "__main__":
     main3()
