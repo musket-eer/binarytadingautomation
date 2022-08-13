@@ -14,17 +14,16 @@ def check_balance():
     returns the balance as an int
     :return (float): returns the outstanding account balance
     """
-    tess.pytesseract.tesseract_cmd ='/usr/local/Cellar/tesseract/4.1.1/bin/tesseract'
-    cap = ImageGrab.grab(bbox=(2162, 220, 2362, 314)) # captures part of the screen on the trading platform that shows the account balance
+    tess.pytesseract.tesseract_cmd ='/usr/local/Cellar/tesseract/5.2.0/bin/tesseract'
+    cap = ImageGrab.grab(bbox=(1100, 115, 1190, 142)) # captures part of the screen on the trading platform that shows the account balance
     cap = ImageOps.invert(cap.convert('RGB')) # converts the captured image to rgb, then inverts the colors for enhanced character distinction
-
+   
     tesstsr = tess.image_to_string(cv2.cvtColor(np.array(cap), cv2.COLOR_BGR2BGRA), lang='eng')
 
     # extracts, from the image, only characters of numerical significance(ignoring currency symbols etc)
     tesstsr = [x for x in tesstsr if x.isdigit() or x == "."]
     tesstsr = "".join(tesstsr)
     
-    print(float(tesstsr))
     return float(tesstsr)
 
 def stop_loss(initial_balance, current_balance):
@@ -50,7 +49,7 @@ def stake_amount(amount):
     :param amount (int): the amount to be staked
     """
     # clicks the trading platform's set stake area
-    auto.click(1348, 264) # text area for entering stake
+    auto.click(1314, 246) # text area for entering stake
 
     # delete characters 5 times to ensure that no character is in the stake area before typing anything
     for i in range(10):
@@ -63,7 +62,7 @@ def execute_trade_up():
     executes an up-trade
     """
     # clicks the trading platform's execute trade up button
-    auto.click(1336, 456)
+    auto.click(1335, 452)
     print(datetime.now()) # prints the time for the trade
 
 def execute_trade_down():
@@ -71,7 +70,7 @@ def execute_trade_down():
     executes a down-trade
     """
     # clicks the trading platform's execute trade down button
-    auto.click(1319, 535)
+    auto.click(1342, 515)
     print(datetime.now()) # prints the time for the trade
 
  
